@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GameSpace
 {
@@ -17,7 +19,7 @@ namespace GameSpace
 
         #region Main Method
 
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             if (ShouldCleanupOrphanedDirectory(args))
             {
@@ -32,17 +34,15 @@ namespace GameSpace
             Console.WriteLine("Available Free Space: {0}", FormatBytes(driveInfo.AvailableFreeSpace));
             Console.WriteLine();
 
-            List<GameInfo> games = new List<GameInfo>();
-
-            foreach (string directory in GetGameRootDirectories().Where(d => Directory.Exists(d)))
+            IEnumerable<string> gameRootDirs = GetGameRootDirectories().Where(d => Directory.Exists(d));
+            ConcurrentBag<GameInfo[]> bag = new();
+            IEnumerable<Task> tasks = gameRootDirs.Select(async item =>
             {
-                DirectoryInfo directoryInfo = new DirectoryInfo(directory);
-                foreach (DirectoryInfo dir in directoryInfo.EnumerateDirectories())
-                {
-                    long totalSize = dir.EnumerateFiles("*", SearchOption.AllDirectories).Sum(file => file.Length);
-                    games.Add(new GameInfo(directory, dir.Name, totalSize));
-                }
-            }
+                bag.Add(await GetGames(item).ConfigureAwait(false));
+            });
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+
+            IEnumerable<GameInfo> games = bag.SelectMany(b => b);
 
             foreach (GameInfo gameInfo in games.OrderByDescending(g => g.GameSize))
             {
@@ -56,6 +56,20 @@ namespace GameSpace
         #endregion
 
         #region Helper Methods
+
+        private static Task<GameInfo[]> GetGames(string directory)
+        {
+            List<GameInfo> games = new List<GameInfo>();
+
+            DirectoryInfo directoryInfo = new DirectoryInfo(directory);
+            foreach (DirectoryInfo dir in directoryInfo.EnumerateDirectories())
+            {
+                long totalSize = dir.EnumerateFiles("*", SearchOption.AllDirectories).Sum(file => file.Length);
+                games.Add(new GameInfo(directory, dir.Name, totalSize));
+            }
+
+            return Task.FromResult(games.ToArray());
+        }
 
         private static string FormatBytes(long bytes)
         {
