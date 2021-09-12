@@ -34,16 +34,16 @@ namespace GameSpace
             Console.WriteLine("Available Free Space: {0}", FormatBytes(driveInfo.AvailableFreeSpace));
             Console.WriteLine();
 
+            List<Task<GameInfo>> tasks = new();
+
             IEnumerable<string> gameRootDirs = GetGameRootDirectories().Where(d => Directory.Exists(d));
-            ConcurrentBag<GameInfo[]> bag = new();
-            IEnumerable<Task> tasks = gameRootDirs.Select(async item =>
+            IEnumerable<DirectoryInfo> allGameDirs = gameRootDirs.SelectMany(d => GetAllGameDirs(d));
+            Parallel.ForEach(allGameDirs, dirInfo =>
             {
-                bag.Add(await GetGames(item).ConfigureAwait(false));
+                tasks.Add(GetGameInfo(dirInfo));
             });
-            await Task.WhenAll(tasks).ConfigureAwait(false);
 
-            IEnumerable<GameInfo> games = bag.SelectMany(b => b);
-
+            GameInfo[] games = await Task.WhenAll(tasks.ToArray());
             foreach (GameInfo gameInfo in games.OrderByDescending(g => g.GameSize))
             {
                 int leftPadding = games.Max(g => g.Name.Length) + 10;
@@ -57,18 +57,16 @@ namespace GameSpace
 
         #region Helper Methods
 
-        private static Task<GameInfo[]> GetGames(string directory)
+        private static IEnumerable<DirectoryInfo> GetAllGameDirs(string gameRootDir)
         {
-            List<GameInfo> games = new List<GameInfo>();
+            DirectoryInfo directoryInfo = new DirectoryInfo(gameRootDir);
+            return directoryInfo.EnumerateDirectories();
+        }
 
-            DirectoryInfo directoryInfo = new DirectoryInfo(directory);
-            foreach (DirectoryInfo dir in directoryInfo.EnumerateDirectories())
-            {
-                long totalSize = dir.EnumerateFiles("*", SearchOption.AllDirectories).Sum(file => file.Length);
-                games.Add(new GameInfo(directory, dir.Name, totalSize));
-            }
-
-            return Task.FromResult(games.ToArray());
+        private static Task<GameInfo> GetGameInfo(DirectoryInfo dir)
+        {
+            long totalSize = dir.EnumerateFiles("*", SearchOption.AllDirectories).Sum(file => file.Length);
+            return Task.FromResult(new GameInfo(dir.Name, totalSize));
         }
 
         private static string FormatBytes(long bytes)
@@ -157,16 +155,14 @@ namespace GameSpace
         private class GameInfo
         {
 
-            public GameInfo(string parentDir, string name, long gameSize)
+            public GameInfo(string name, long gameSize)
             {
-                ParentDir = parentDir;
                 Name = name;
                 GameSize = gameSize;
             }
 
             public long GameSize { get; private set; }
             public string Name { get; private set; }
-            public string ParentDir { get; private set; }
 
         }
 
