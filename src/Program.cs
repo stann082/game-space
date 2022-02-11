@@ -46,7 +46,10 @@ namespace GameSpace
             foreach (GameInfo gameInfo in games.OrderByDescending(g => g.GameSizeBytes))
             {
                 int leftPadding = games.Max(g => g.Name.Length) + 10;
-                Console.WriteLine("{0}: {1} [{2}]", gameInfo.Name.PadLeft(leftPadding), gameInfo.GameSizeFormatted.PadRight(10), GetPercentage(gameInfo.GameSizeBytes, driveInfo.TotalSize));
+                string name = gameInfo.Name.PadLeft(leftPadding);
+                string size = gameInfo.GameSizeFormatted.PadRight(10);
+                string percentage = GetPercentage(gameInfo.GameSizeBytes, driveInfo.TotalSize);
+                Console.WriteLine($"{name}: {size} [{percentage}]");
             }
 
             Console.WriteLine();
