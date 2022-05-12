@@ -16,10 +16,17 @@ namespace GameSpace
 
         #endregion
 
+        #region Variables
+
+        private static IList<string> _exceptionMessages;
+
+        #endregion
+
         #region Main Method
 
         public static async Task Main(string[] args)
         {
+            _exceptionMessages = new List<string>();
             if (ShouldCleanupOrphanedDirectory(args))
             {
                 return;
@@ -52,6 +59,15 @@ namespace GameSpace
                 Console.WriteLine($"{name}: {size} [{percentage}]");
             }
 
+            if (_exceptionMessages.Count > 0)
+            {
+                Console.WriteLine();
+                foreach (string exceptionMessage in _exceptionMessages)
+                {
+                    Console.WriteLine(exceptionMessage);
+                }
+            }
+
             Console.WriteLine();
         }
 
@@ -62,7 +78,15 @@ namespace GameSpace
         private static IEnumerable<DirectoryInfo> GetAllGameDirs(string gameRootDir)
         {
             DirectoryInfo directoryInfo = new DirectoryInfo(gameRootDir);
-            return directoryInfo.EnumerateDirectories();
+            try
+            {
+                return directoryInfo.EnumerateDirectories();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _exceptionMessages.Add(ex.Message);
+                return Enumerable.Empty<DirectoryInfo>();
+            }
         }
 
         private static Task<GameInfo> GetGameInfo(DirectoryInfo dir)
@@ -76,6 +100,7 @@ namespace GameSpace
             List<string> directories = new()
             {
                 @"D:\Battle_Net",
+                @"D:\EA_Games",
                 @"D:\Epic",
                 @"D:\GOG_Galaxy\Games",
                 @"D:\origin_games",
