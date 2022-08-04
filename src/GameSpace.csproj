@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
-    <FileVersion>1.0.0.1</FileVersion>
+    <TargetFramework>net6.0</TargetFramework>
+    <FileVersion>1.0.0.2</FileVersion>
   </PropertyGroup>
 
 </Project>
