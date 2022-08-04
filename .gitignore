@@ -370,3 +370,4 @@ MigrationBackup/
 
 # Custom
 **/appsettings.*.json
+**/pub

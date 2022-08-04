@@ -2,6 +2,7 @@
     "files.exclude": {
         "**/bin": true,
         "**/build": true,
-        "**/obj": true
+        "**/obj": true,
+        "**/pub": true
     }
 }
