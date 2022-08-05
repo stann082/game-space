@@ -101,11 +101,10 @@ namespace GameSpace
             {
                 @"D:\Battle_Net",
                 @"D:\EA_Games",
-                @"D:\Epic",
+                @"D:\EpicGames",
                 @"D:\GOG_Galaxy\Games",
-                @"D:\origin_games",
-                @"D:\Steam\steamapps\common",
-                @"D:\Ubisoft_Connect",
+                @"D:\SteamLibrary\steamapps\common",
+                @"D:\Ubisoft",
                 @"D:\WindowsApps"
             };
 
