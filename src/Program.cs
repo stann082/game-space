@@ -105,7 +105,7 @@ namespace GameSpace
                 @"D:\GOG_Galaxy\Games",
                 @"D:\SteamLibrary\steamapps\common",
                 @"D:\Ubisoft",
-                @"D:\WindowsApps"
+                @"D:\XboxGames"
             };
 
             return directories.ToArray();
