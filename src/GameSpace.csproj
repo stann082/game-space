@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
-    <FileVersion>1.0.0.3</FileVersion>
+    <TargetFramework>net7.0</TargetFramework>
+    <AssemblyName>gamespace</AssemblyName>
+    <FileVersion>1.0.0.4</FileVersion>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

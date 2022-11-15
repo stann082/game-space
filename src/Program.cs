@@ -12,7 +12,7 @@ namespace GameSpace
 
         #region Constants
 
-        private const string CLEANUP_ARGUMENT = "--cleanup";
+        private const string CleanupArgument = "--cleanup";
 
         #endregion
 
@@ -121,12 +121,12 @@ namespace GameSpace
 
         private static bool ShouldCleanupOrphanedDirectory(string[] args)
         {
-            if (!args.Contains(CLEANUP_ARGUMENT))
+            if (!args.Contains(CleanupArgument))
             {
                 return false;
             }
 
-            string gameFolderToDelete = string.Join(' ', args.Where(a => a != CLEANUP_ARGUMENT));
+            string gameFolderToDelete = string.Join(' ', args.Where(a => a != CleanupArgument));
             foreach (string directory in GetGameRootDirectories())
             {
                 if (!Directory.Exists(directory))
