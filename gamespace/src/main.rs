@@ -1,15 +1,42 @@
 use std::env;
-use std::fs;
 use std::path::Path;
+use std::fs;
+use std::io::Error;
+use humansize::{FileSize, binary};
 
 const CLEANUP_ARGUMENT: &str = "--cleanup";
 
-fn main() {
+fn main() -> Result<(), Error> {
     let args: Vec<String> = env::args().collect();
     let mut exception_messages: Vec<String> = Vec::new();
     if should_cleanup_orphaned_directory(&args, &mut exception_messages) {
-        return;
+        return Err(Error::new(ErrorKind::Other, "Failed to cleanup orphaned directory"));
     }
+
+    let path = Path::new("D:\\");
+    let drive_info = path.metadata()?;
+    let total_space = drive_info.len();
+    let available_space = drive_info.avail() as u64;
+    let used_space = total_space - available_space;
+
+    println!();
+    println!("         Total Space: {}", total_space.file_size(binary).unwrap());
+    println!("          Used Space: {}", used_space.file_size(binary).unwrap());
+    println!("Available Free Space: {}", available_space.file_size(binary).unwrap());
+    println!();
+
+    Ok(())
+}
+
+fn format_bytes(bytes: u64) -> String {
+    let suffix = ["B", "KB", "MB", "GB", "TB"];
+    let mut i = 0;
+    let mut dbl_sbyte = bytes as f64;
+    while i < suffix.len() && bytes >= 1024 {
+        i += 1;
+        dbl_sbyte = bytes as f64 / 1024.0;
+    }
+    format!("{:.2} {}", dbl_sbyte, suffix[i])
 }
 
 fn get_game_root_directories() -> Vec<&'static str> {
@@ -30,10 +57,11 @@ fn should_cleanup_orphaned_directory(args: &[String], exception_messages: &mut V
     }
 
     let game_folder_to_delete = args
-        .iter()
-        .filter(|a| *a != CLEANUP_ARGUMENT)
-        .collect::<Vec<&String>>()
-        .join(" "); // Join elements of Vec with space separator
+    .iter()
+    .filter(|a| *a != CLEANUP_ARGUMENT)
+    .map(|s| s.as_str())
+    .collect::<Vec<&str>>()
+    .join(" ");
 
     for directory in get_game_root_directories() {
         if !Path::new(directory).exists() {
