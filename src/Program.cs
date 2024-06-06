@@ -37,8 +37,8 @@ public static class Program
 
         List<Task<GameInfo>> tasks = new();
 
-        IEnumerable<string> gameRootDirs = GetGameRootDirectories().Where(d => Directory.Exists(d));
-        IEnumerable<DirectoryInfo> allGameDirs = gameRootDirs.SelectMany(d => GetAllGameDirs(d));
+        IEnumerable<string> gameRootDirs = GetGameRootDirectories().Where(Directory.Exists);
+        IEnumerable<DirectoryInfo> allGameDirs = gameRootDirs.SelectMany(GetAllGameDirs);
         Parallel.ForEach(allGameDirs, dirInfo => { tasks.Add(GetGameInfo(dirInfo)); });
 
         GameInfo[] games = await Task.WhenAll(tasks.ToArray());
@@ -87,7 +87,7 @@ public static class Program
         return Task.FromResult(new GameInfo(dir.Name, totalSize));
     }
 
-    private static string[] GetGameRootDirectories()
+    private static IEnumerable<string> GetGameRootDirectories()
     {
         List<string> directories = new()
         {
@@ -100,14 +100,14 @@ public static class Program
             @"D:\XboxGames"
         };
 
-        return directories.ToArray();
+        return directories;
     }
 
     private static string GetPercentage(long gameSize, long totalDiskSize)
     {
         NumberFormatInfo nfi = new CultureInfo("en-US", false).NumberFormat;
         nfi.PercentDecimalDigits = 0;
-        double percent = (double)gameSize / (double)totalDiskSize;
+        double percent = gameSize / (double)totalDiskSize;
         return percent.ToString("P", nfi);
     }
 
