@@ -31,24 +31,34 @@ public static class Program
 
         Console.WriteLine();
         Console.WriteLine($"         Total Space: {ByteFormatter.Format(driveInfo.TotalSize)}");
-        Console.WriteLine($"          Used Space: {ByteFormatter.Format(driveInfo.TotalSize)}");
-        Console.WriteLine($"Available Free Space: {ByteFormatter.Format(driveInfo.TotalSize)}");
+        Console.WriteLine($"          Used Space: {ByteFormatter.Format(driveInfo.TotalSize - driveInfo.AvailableFreeSpace)}");
+        Console.WriteLine($"Available Free Space: {ByteFormatter.Format(driveInfo.AvailableFreeSpace)}");
         Console.WriteLine();
 
         List<Task<GameInfo>> tasks = new();
 
-        IEnumerable<string> gameRootDirs = GetGameRootDirectories().Where(Directory.Exists);
-        IEnumerable<DirectoryInfo> allGameDirs = gameRootDirs.SelectMany(GetAllGameDirs);
+        Dictionary<string, string> gameRootDirs = GetGameRootDirectories();
+        List<DirectoryInfo> allGameDirs = new List<DirectoryInfo>();
+        foreach (var gameRootDir in gameRootDirs.Where(d => Directory.Exists(d.Key)))
+        {
+            IEnumerable<DirectoryInfo> gameDirs = GetAllGameDirs(gameRootDir.Key);
+            allGameDirs.AddRange(gameDirs);
+        }
+        
         Parallel.ForEach(allGameDirs, dirInfo => { tasks.Add(GetGameInfo(dirInfo)); });
-
         GameInfo[] games = await Task.WhenAll(tasks.ToArray());
+        
+        int maxNameLength = games.Max(g => g.Name.Length);
+        int maxPlatformLength = gameRootDirs.Values.Max(p => p.Length);
+        int maxSizeLength = games.Max(g => g.GameSizeFormatted.Length);
         foreach (GameInfo gameInfo in games.OrderByDescending(g => g.GameSizeBytes))
         {
-            int leftPadding = games.Max(g => g.Name.Length) + 10;
-            string name = gameInfo.Name.PadLeft(leftPadding);
-            string size = gameInfo.GameSizeFormatted.PadRight(10);
+            string name = gameInfo.Name.PadLeft(maxNameLength);
+            string size = gameInfo.GameSizeFormatted.PadRight(maxSizeLength);
             string percentage = GetPercentage(gameInfo.GameSizeBytes, driveInfo.TotalSize);
-            Console.WriteLine($"{name}: {size} [{percentage}]");
+            string parentDir = Directory.GetParent(gameInfo.DirPath)?.FullName;
+            string platform = gameRootDirs[parentDir ?? throw new InvalidOperationException($"Invalid key for {gameInfo.DirPath}")].PadLeft(maxPlatformLength);
+            Console.WriteLine($"{name} ({platform}): {size} [{percentage}]");
         }
 
         if (_exceptionMessages.Count > 0)
@@ -84,23 +94,20 @@ public static class Program
     private static Task<GameInfo> GetGameInfo(DirectoryInfo dir)
     {
         long totalSize = dir.EnumerateFiles("*", SearchOption.AllDirectories).Sum(file => file.Length);
-        return Task.FromResult(new GameInfo(dir.Name, totalSize));
+        return Task.FromResult(new GameInfo(dir.Name, totalSize, dir.FullName));
     }
 
-    private static IEnumerable<string> GetGameRootDirectories()
+    private static Dictionary<string, string> GetGameRootDirectories()
     {
-        List<string> directories = new()
-        {
-            @"D:\Battle_Net",
-            @"D:\EA_Games",
-            @"D:\EpicGames",
-            @"D:\GOG_Galaxy\Games",
-            @"D:\SteamLibrary\steamapps\common",
-            @"D:\Ubisoft",
-            @"D:\XboxGames"
-        };
-
-        return directories;
+        Dictionary<string, string> map = new Dictionary<string, string>();
+        map[@"D:\Battle_Net"] = "Battle.NET";
+        map[@"D:\EA_Games"] = "EA Games";
+        map[@"D:\EpicGames"] = "Epic Games";
+        map[@"D:\GOG_Galaxy\Games"] = "GOG Galaxy";
+        map[@"D:\SteamLibrary\steamapps\common"] = "Steam";
+        map[@"D:\Ubisoft"] = "Ubisoft";
+        map[@"D:\XboxGames"] = "XBOX Games";
+        return map;
     }
 
     private static string GetPercentage(long gameSize, long totalDiskSize)
@@ -119,7 +126,7 @@ public static class Program
         }
 
         string gameFolderToDelete = string.Join(' ', args.Where(a => a != CleanupArgument));
-        foreach (string directory in GetGameRootDirectories())
+        foreach (string directory in GetGameRootDirectories().Select(c => c.Key))
         {
             if (!Directory.Exists(directory))
             {
@@ -179,12 +186,14 @@ public static class Program
     private class GameInfo
     {
 
-        public GameInfo(string name, long gameSize)
+        public GameInfo(string name, long gameSize, string dirPath)
         {
+            DirPath = dirPath;
             Name = name;
             GameSizeBytes = gameSize;
         }
 
+        public string DirPath { get; private set; }
         public long GameSizeBytes { get; private set; }
         public string GameSizeFormatted => ByteFormatter.Format(GameSizeBytes);
         public string Name { get; private set; }
