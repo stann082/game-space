@@ -5,12 +5,16 @@ VisualStudioVersion = 16.0.28803.202
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameSpace", "src\GameSpace.csproj", "{258E36C3-DA7E-4B20-96C3-678DFF059663}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_gameSpaceBuild", ".nuke\_gameSpaceBuild.csproj", "{9634EAA2-0C3A-4032-B75C-AB57B3A6A9A5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9634EAA2-0C3A-4032-B75C-AB57B3A6A9A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9634EAA2-0C3A-4032-B75C-AB57B3A6A9A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{258E36C3-DA7E-4B20-96C3-678DFF059663}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{258E36C3-DA7E-4B20-96C3-678DFF059663}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{258E36C3-DA7E-4B20-96C3-678DFF059663}.Release|Any CPU.ActiveCfg = Release|Any CPU
