@@ -18,6 +18,17 @@
           "type": "boolean",
           "description": "Indicates to continue a previously failed build attempt"
         },
+        "DotNetVerbosityLevel": {
+          "type": "string",
+          "description": "Verbosity level of the build output - Default is 'Minimal'",
+          "enum": [
+            "detailed",
+            "diagnostic",
+            "minimal",
+            "normal",
+            "quiet"
+          ]
+        },
         "Help": {
           "type": "boolean",
           "description": "Shows the help text for this build assembly"
@@ -72,11 +83,14 @@
           "items": {
             "type": "string",
             "enum": [
+              "Build",
               "Clean",
-              "Compile",
+              "DeepClean",
               "Deploy",
               "Publish",
-              "Restore"
+              "Restore",
+              "Test",
+              "TestAsync"
             ]
           }
         },
@@ -86,12 +100,22 @@
           "items": {
             "type": "string",
             "enum": [
+              "Build",
               "Clean",
-              "Compile",
+              "DeepClean",
               "Deploy",
               "Publish",
-              "Restore"
+              "Restore",
+              "Test",
+              "TestAsync"
             ]
+          }
+        },
+        "TestProjectPaths": {
+          "type": "array",
+          "description": "Paths to the test project(s) to run. You can provide multiple paths as separate arguments",
+          "items": {
+            "type": "string"
           }
         },
         "Verbosity": {
