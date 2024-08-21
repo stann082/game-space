@@ -13,7 +13,7 @@ public static class Program
 
     #region Variables
 
-    private static IList<string> _exceptionMessages;
+    private static readonly IList<string> _exceptionMessages = new List<string>();
 
     #endregion
 
@@ -21,7 +21,6 @@ public static class Program
 
     public static async Task Main(string[] args)
     {
-        _exceptionMessages = new List<string>();
         if (ShouldCleanupOrphanedDirectory(args))
         {
             return;
@@ -134,15 +133,13 @@ public static class Program
             }
 
             string[] dirs = Directory.GetDirectories(directory, $"{gameFolderToDelete}", SearchOption.AllDirectories);
-            if (dirs.Length == 0)
+            switch (dirs.Length)
             {
-                continue;
-            }
-
-            if (dirs.Length > 1)
-            {
-                Console.WriteLine($"Found more than 1 directory matching {gameFolderToDelete} in {directory}...");
-                continue;
+                case 0:
+                    continue;
+                case > 1:
+                    Console.WriteLine($"Found more than 1 directory matching {gameFolderToDelete} in {directory}...");
+                    continue;
             }
 
             string foundDirectory = dirs[0];
