@@ -7,10 +7,12 @@ using Serilog;
 
 // ReSharper disable UnusedMember.Local
 // ReSharper disable AllUnderscoreLocalParameterName
+namespace _build;
+
 class BuildProject : NukeBuild
 {
 
-    public static int Main() => Execute<BuildProject>(x => x.Build);
+    public static int Main() => Execute<BuildProject>();
 
     #region Parameters
 
