@@ -100,6 +100,7 @@ public static class Program
     {
         Dictionary<string, string> map = new Dictionary<string, string>();
         map[@"D:\Battle_Net"] = "Battle.NET";
+        map[@"D:\EA Games"] = "EA Games";
         map[@"D:\EA_Games"] = "EA Games";
         map[@"D:\EpicGames"] = "Epic Games";
         map[@"D:\GOG_Galaxy\Games"] = "GOG Galaxy";

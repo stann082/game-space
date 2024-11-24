@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Linq;
 using Nuke.Common;
 using Nuke.Common.IO;
 using Nuke.Common.Tools.DotNet;
@@ -20,6 +19,9 @@ class BuildProject : NukeBuild
 
     [Parameter("Verbosity level of the build output - Default is 'Minimal'")]
     readonly DotNetVerbosity DotNetVerbosityLevel = DotNetVerbosity.minimal;
+    
+    [Parameter("Skips the build step if specified.")]
+    readonly bool NoBuild;
 
     [Parameter("Paths to the test project(s) to run. You can provide multiple paths as separate arguments.")]
     readonly AbsolutePath[] TestProjectPaths;
@@ -102,48 +104,6 @@ class BuildProject : NukeBuild
                 .SetVerbosity(DotNetVerbosityLevel)
                 .SetProjectFile(RootDirectory / "GameSpace.sln"));
         });
-
-    Target Test => _ => _
-        .DependsOn(Build)
-        .Executes(() =>
-        {
-            foreach (var project in GetTestProjects())
-            {
-                DotNetTasks.DotNetTest(s => s
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration)
-                    .SetVerbosity(DotNetVerbosityLevel)
-                    .EnableNoBuild());
-            }
-        });
-
-    Target TestAsync => _ => _
-        .DependsOn(Build)
-        .Executes(() =>
-        {
-            GetTestProjects().AsParallel().ForAll(project =>
-            {
-                DotNetTasks.DotNetTest(s => s
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration)
-                    .SetVerbosity(DotNetVerbosityLevel)
-                    .EnableNoBuild());
-            });
-        });
-
-    #endregion
-
-    #region Helper Methods
-
-    AbsolutePath[] GetTestProjects() =>
-        (TestProjectPaths ?? []).Length > 0
-            ? TestProjectPaths
-            :
-            [
-                RootDirectory / "TestProject1" / "TestProject1.csproj",
-                RootDirectory / "TestProject2" / "TestProject2.csproj",
-                RootDirectory / "TestProject3" / "TestProject3.csproj"
-            ];
 
     #endregion
 

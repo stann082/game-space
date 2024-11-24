@@ -54,6 +54,10 @@
             "VSCode"
           ]
         },
+        "NoBuild": {
+          "type": "boolean",
+          "description": "Skips the build step if specified"
+        },
         "NoLogo": {
           "type": "boolean",
           "description": "Disables displaying the NUKE logo"
@@ -88,9 +92,7 @@
               "DeepClean",
               "Deploy",
               "Publish",
-              "Restore",
-              "Test",
-              "TestAsync"
+              "Restore"
             ]
           }
         },
@@ -105,9 +107,7 @@
               "DeepClean",
               "Deploy",
               "Publish",
-              "Restore",
-              "Test",
-              "TestAsync"
+              "Restore"
             ]
           }
         },
