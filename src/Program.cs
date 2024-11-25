@@ -86,7 +86,7 @@ public static class Program
         catch (UnauthorizedAccessException ex)
         {
             _exceptionMessages.Add(ex.Message);
-            return Enumerable.Empty<DirectoryInfo>();
+            return [];
         }
     }
 
@@ -98,15 +98,17 @@ public static class Program
 
     private static Dictionary<string, string> GetGameRootDirectories()
     {
-        Dictionary<string, string> map = new Dictionary<string, string>();
-        map[@"D:\Battle_Net"] = "Battle.NET";
-        map[@"D:\EA Games"] = "EA Games";
-        map[@"D:\EA_Games"] = "EA Games";
-        map[@"D:\EpicGames"] = "Epic Games";
-        map[@"D:\GOG_Galaxy\Games"] = "GOG Galaxy";
-        map[@"D:\SteamLibrary\steamapps\common"] = "Steam";
-        map[@"D:\Ubisoft"] = "Ubisoft";
-        map[@"D:\XboxGames"] = "XBOX Games";
+        Dictionary<string, string> map = new Dictionary<string, string>
+        {
+            [@"D:\Battle_Net"] = "Battle.NET",
+            [@"D:\EA Games"] = "EA Games",
+            [@"D:\EA_Games"] = "EA Games",
+            [@"D:\EpicGames"] = "Epic Games",
+            [@"D:\GOG_Galaxy\Games"] = "GOG Galaxy",
+            [@"D:\SteamLibrary\steamapps\common"] = "Steam",
+            [@"D:\Ubisoft"] = "Ubisoft",
+            [@"D:\XboxGames"] = "XBOX Games"
+        };
         return map;
     }
 
@@ -181,20 +183,12 @@ public static class Program
 
     }
 
-    private class GameInfo
+    private class GameInfo(string name, long gameSize, string dirPath)
     {
-
-        public GameInfo(string name, long gameSize, string dirPath)
-        {
-            DirPath = dirPath;
-            Name = name;
-            GameSizeBytes = gameSize;
-        }
-
-        public string DirPath { get; private set; }
-        public long GameSizeBytes { get; private set; }
+        public string DirPath { get; } = dirPath;
+        public long GameSizeBytes { get; } = gameSize;
         public string GameSizeFormatted => ByteFormatter.Format(GameSizeBytes);
-        public string Name { get; private set; }
+        public string Name { get; } = name;
 
         public override string ToString()
         {
