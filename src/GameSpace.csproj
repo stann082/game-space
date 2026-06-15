@@ -11,6 +11,8 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <DebugType>embedded</DebugType>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -20,5 +22,9 @@
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <OutputPath>..\build\release</OutputPath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+  </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+using System.Globalization;
+using GameSpace.Detectors;
 
 namespace GameSpace;
 
@@ -21,42 +22,55 @@ public static class Program
 
     public static async Task Main(string[] args)
     {
-        if (ShouldCleanupOrphanedDirectory(args))
+        Dictionary<string, string> gameRootDirs = GameLibraryDetector.Detect();
+
+        if (ShouldCleanupOrphanedDirectory(args, gameRootDirs))
         {
             return;
         }
 
-        DriveInfo driveInfo = new("D:\\");
+        PrintDriveInfo(gameRootDirs.Keys);
 
-        Console.WriteLine();
-        Console.WriteLine($"         Total Space: {ByteFormatter.Format(driveInfo.TotalSize)}");
-        Console.WriteLine($"          Used Space: {ByteFormatter.Format(driveInfo.TotalSize - driveInfo.AvailableFreeSpace)}");
-        Console.WriteLine($"Available Free Space: {ByteFormatter.Format(driveInfo.AvailableFreeSpace)}");
-        Console.WriteLine();
+        List<DirectoryInfo> allGameDirs = new();
+        foreach (var (path, _) in gameRootDirs.Where(d => Directory.Exists(d.Key)))
+        {
+            allGameDirs.AddRange(GetAllGameDirs(path));
+        }
+
+        if (allGameDirs.Count == 0)
+        {
+            Console.WriteLine("No game directories detected.");
+            return;
+        }
 
         List<Task<GameInfo>> tasks = new();
-
-        Dictionary<string, string> gameRootDirs = GetGameRootDirectories();
-        List<DirectoryInfo> allGameDirs = new List<DirectoryInfo>();
-        foreach (var gameRootDir in gameRootDirs.Where(d => Directory.Exists(d.Key)))
-        {
-            IEnumerable<DirectoryInfo> gameDirs = GetAllGameDirs(gameRootDir.Key);
-            allGameDirs.AddRange(gameDirs);
-        }
-        
         Parallel.ForEach(allGameDirs, dirInfo => { tasks.Add(GetGameInfo(dirInfo)); });
         GameInfo[] games = await Task.WhenAll(tasks.ToArray());
-        
+
         int maxNameLength = games.Max(g => g.Name.Length);
         int maxPlatformLength = gameRootDirs.Values.Max(p => p.Length);
         int maxSizeLength = games.Max(g => g.GameSizeFormatted.Length);
+
+        // Build a lookup from game dir → platform label for display
+        var dirToLabel = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (rootPath, label) in gameRootDirs)
+        {
+            foreach (DirectoryInfo gameDir in allGameDirs.Where(d =>
+                string.Equals(Directory.GetParent(d.FullName)?.FullName, rootPath, StringComparison.OrdinalIgnoreCase)))
+            {
+                dirToLabel.TryAdd(gameDir.FullName, label);
+            }
+        }
+
+        // Use the drive containing the largest single game for the percentage denominator
+        long totalDiskSize = GetTotalDiskSize(games);
+
         foreach (GameInfo gameInfo in games.OrderByDescending(g => g.GameSizeBytes))
         {
             string name = gameInfo.Name.PadLeft(maxNameLength);
             string size = gameInfo.GameSizeFormatted.PadRight(maxSizeLength);
-            string percentage = GetPercentage(gameInfo.GameSizeBytes, driveInfo.TotalSize);
-            string parentDir = Directory.GetParent(gameInfo.DirPath)?.FullName;
-            string platform = gameRootDirs[parentDir ?? throw new InvalidOperationException($"Invalid key for {gameInfo.DirPath}")].PadLeft(maxPlatformLength);
+            string percentage = GetPercentage(gameInfo.GameSizeBytes, totalDiskSize);
+            string platform = (dirToLabel.GetValueOrDefault(gameInfo.DirPath) ?? "Unknown").PadLeft(maxPlatformLength);
             Console.WriteLine($"{name} ({platform}): {size} [{percentage}]");
         }
 
@@ -64,9 +78,7 @@ public static class Program
         {
             Console.WriteLine();
             foreach (string exceptionMessage in _exceptionMessages)
-            {
                 Console.WriteLine(exceptionMessage);
-            }
         }
 
         Console.WriteLine();
@@ -76,9 +88,53 @@ public static class Program
 
     #region Helper Methods
 
+    private static void PrintDriveInfo(IEnumerable<string> libraryRoots)
+    {
+        var drives = libraryRoots
+            .Select(p => Path.GetPathRoot(p))
+            .Where(r => r is not null)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(r => { try { return new DriveInfo(r!); } catch { return null; } })
+            .Where(d => d is not null)
+            .ToList();
+
+        Console.WriteLine();
+        foreach (DriveInfo drive in drives!)
+        {
+            Console.WriteLine($"Drive {drive.Name}");
+            Console.WriteLine($"         Total Space: {ByteFormatter.Format(drive.TotalSize)}");
+            Console.WriteLine($"          Used Space: {ByteFormatter.Format(drive.TotalSize - drive.AvailableFreeSpace)}");
+            Console.WriteLine($"Available Free Space: {ByteFormatter.Format(drive.AvailableFreeSpace)}");
+            Console.WriteLine();
+        }
+    }
+
+    private static long GetTotalDiskSize(GameInfo[] games)
+    {
+        if (games.Length == 0)
+            return 1;
+
+        // Pick the drive that holds the most game data as the reference
+        var driveGroups = games
+            .GroupBy(g => Path.GetPathRoot(g.DirPath), StringComparer.OrdinalIgnoreCase)
+            .Select(grp =>
+            {
+                try
+                {
+                    return new DriveInfo(grp.Key!).TotalSize;
+                }
+                catch
+                {
+                    return 0L;
+                }
+            });
+
+        return driveGroups.Max();
+    }
+
     private static IEnumerable<DirectoryInfo> GetAllGameDirs(string gameRootDir)
     {
-        DirectoryInfo directoryInfo = new DirectoryInfo(gameRootDir);
+        DirectoryInfo directoryInfo = new(gameRootDir);
         try
         {
             return directoryInfo.EnumerateDirectories();
@@ -96,22 +152,6 @@ public static class Program
         return Task.FromResult(new GameInfo(dir.Name, totalSize, dir.FullName));
     }
 
-    private static Dictionary<string, string> GetGameRootDirectories()
-    {
-        Dictionary<string, string> map = new Dictionary<string, string>
-        {
-            [@"D:\Battle_Net"] = "Battle.NET",
-            [@"D:\EA Games"] = "EA Games",
-            [@"D:\EA_Games"] = "EA Games",
-            [@"D:\EpicGames"] = "Epic Games",
-            [@"D:\GOG_Galaxy\Games"] = "GOG Galaxy",
-            [@"D:\SteamLibrary\steamapps\common"] = "Steam",
-            [@"D:\Ubisoft"] = "Ubisoft",
-            [@"D:\XboxGames"] = "XBOX Games"
-        };
-        return map;
-    }
-
     private static string GetPercentage(long gameSize, long totalDiskSize)
     {
         NumberFormatInfo nfi = new CultureInfo("en-US", false).NumberFormat;
@@ -120,20 +160,16 @@ public static class Program
         return percent.ToString("P", nfi);
     }
 
-    private static bool ShouldCleanupOrphanedDirectory(string[] args)
+    private static bool ShouldCleanupOrphanedDirectory(string[] args, Dictionary<string, string> gameRootDirs)
     {
         if (!args.Contains(CleanupArgument))
-        {
             return false;
-        }
 
         string gameFolderToDelete = string.Join(' ', args.Where(a => a != CleanupArgument));
-        foreach (string directory in GetGameRootDirectories().Select(c => c.Key))
+        foreach (string directory in gameRootDirs.Keys)
         {
             if (!Directory.Exists(directory))
-            {
                 continue;
-            }
 
             string[] dirs = Directory.GetDirectories(directory, $"{gameFolderToDelete}", SearchOption.AllDirectories);
             switch (dirs.Length)
